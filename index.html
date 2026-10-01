@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>영화 찜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e9edf2;
+    --surface: #ffffff;
+    --ink: #1b2438;
+    --ink-soft: #5d6883;
+    --line: #cbd3df;
+    --accent: #2f4bff;
+    --wish: #e0335c;
+    --serif: "Noto Serif KR", "Nanum Myeongjo", serif;
+    --sans: "Noto Sans KR", system-ui, -apple-system, "Malgun Gothic", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141a29;
+      --surface: #1d2538;
+      --ink: #eef1f8;
+      --ink-soft: #9aa5c0;
+      --line: #313b56;
+      --accent: #7f92ff;
+      --wish: #ff6b8b;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 16px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* Header */
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .brand { font-family: var(--serif); font-weight: 900; font-size: 22px; letter-spacing: -0.02em; }
+  .linklike {
+    background: none; border: 0; padding: 4px 0;
+    color: var(--ink-soft); font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .linklike:hover { color: var(--ink); }
+
+  /* Hero search */
+  .hero { margin: 48px 0 28px; }
+  .search-label { display: block; font-size: 15px; color: var(--ink-soft); margin-bottom: 4px; }
+  .search-input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 3px solid var(--ink);
+    border-radius: 0;
+    padding: 6px 0 10px;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(28px, 6vw, 52px);
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+  .search-input::placeholder { color: var(--line); }
+  .search-input:focus-visible { outline: none; border-bottom-color: var(--accent); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+  .tab {
+    background: none; border: 0; padding: 10px 0;
+    font-size: 16px; font-weight: 500; color: var(--ink-soft);
+    border-bottom: 3px solid transparent; margin-bottom: -1px;
+  }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+  .count { color: var(--wish); font-weight: 700; margin-left: 4px; }
+
+  .section-title { font-family: var(--serif); font-size: 22px; margin: 0 0 20px; letter-spacing: -0.02em; }
+
+  /* Grid */
+  .grid {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: 28px 18px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .poster-wrap { position: relative; }
+  .poster {
+    display: block; width: 100%; padding: 0; border: 0; background: var(--line);
+    aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden;
+  }
+  .poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .poster:hover img { filter: brightness(0.92); }
+  .no-poster {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    height: 100%; padding: 12px; font-family: var(--serif); font-weight: 700; color: var(--ink-soft);
+  }
+  .heart {
+    position: absolute; top: 8px; right: 8px;
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 0; background: rgba(255,255,255,0.94);
+    display: grid; place-items: center;
+    box-shadow: 0 1px 4px rgba(20,26,41,0.3);
+    color: #1b2438;
+  }
+  .heart svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .heart[aria-pressed="true"] { color: var(--wish); }
+  .heart[aria-pressed="true"] svg { fill: currentColor; }
+  .heart:active { transform: scale(0.92); }
+
+  .card-title { margin: 10px 0 0; font-size: 15px; font-weight: 700; line-height: 1.35; }
+  .card-meta { display: flex; gap: 10px; font-size: 13px; color: var(--ink-soft); }
+
+  .more { display: block; margin: 40px auto 0; padding: 12px 32px; border-radius: 999px;
+    border: 2px solid var(--ink); background: transparent; font-weight: 700; }
+  .more:hover { background: var(--ink); color: var(--bg); }
+
+  /* States */
+  .state { padding: 48px 0; color: var(--ink-soft); max-width: 46ch; }
+  .state strong { display: block; color: var(--ink); font-size: 18px; margin-bottom: 4px; }
+  .state .primary { margin-top: 16px; }
+  .primary {
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    padding: 10px 20px; font-weight: 700;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .primary { color: #10162a; } }
+
+  /* Dialogs */
+  dialog {
+    border: 0; padding: 0; border-radius: 10px;
+    background: var(--surface); color: var(--ink);
+    max-width: min(760px, calc(100vw - 24px)); width: 100%;
+    max-height: calc(100vh - 24px);
+    box-shadow: 0 20px 60px rgba(10,14,28,0.45);
+  }
+  dialog::backdrop { background: rgba(10,14,28,0.6); }
+  .dlg-body { padding: 24px; }
+  .dlg-close {
+    position: absolute; top: 10px; right: 10px; z-index: 1;
+    width: 36px; height: 36px; border-radius: 50%; border: 0;
+    background: rgba(255,255,255,0.94); color: #1b2438; font-size: 20px; line-height: 1;
+    box-shadow: 0 1px 4px rgba(20,26,41,0.3);
+  }
+
+  .detail { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
+  .detail img, .detail .no-poster { width: 100%; aspect-ratio: 2 / 3; border-radius: 4px; object-fit: cover; background: var(--line); }
+  .detail h2 { font-family: var(--serif); font-size: 28px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .tagline { color: var(--ink-soft); margin: 0 0 12px; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 16px 0; font-size: 14px; }
+  .facts dt { color: var(--ink-soft); }
+  .facts dd { margin: 0; }
+  .overview { font-size: 15px; max-width: 60ch; }
+  .wish-btn {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+    padding: 10px 18px; border-radius: 6px; border: 2px solid var(--ink); background: transparent; font-weight: 700;
+  }
+  .wish-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .wish-btn[aria-pressed="true"] { background: var(--wish); border-color: var(--wish); color: #fff; }
+  .wish-btn[aria-pressed="true"] svg { fill: currentColor; }
+
+  .key-form label { display: block; font-weight: 700; margin-bottom: 6px; }
+  .key-form input {
+    width: 100%; padding: 10px 12px; font: inherit; font-family: ui-monospace, Menlo, monospace;
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+  }
+  .key-form p { color: var(--ink-soft); font-size: 14px; }
+  .row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .secondary { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 10px 20px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px;
+    font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .hero { margin-top: 32px; }
+    .detail { grid-template-columns: 1fr; }
+    .detail .poster-col { max-width: 200px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 24px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="brand">영화 찜</span>
+    <button class="linklike" id="keyBtn" type="button">API 키 설정</button>
+  </header>
+
+  <section class="hero">
+    <label class="search-label" for="q">보고 싶은 영화를 찾아보세요</label>
+    <input id="q" class="search-input" type="search" placeholder="영화 제목" autocomplete="off">
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-search" aria-selected="true" data-view="search">검색</button>
+    <button class="tab" role="tab" id="tab-wish" aria-selected="false" data-view="wish">찜 목록<span class="count" id="wishCount"></span></button>
+  </div>
+
+  <main id="main" aria-live="polite"></main>
+</div>
+
+<dialog id="detailDlg" aria-label="영화 상세">
+  <button class="dlg-close" id="detailClose" type="button" aria-label="닫기">×</button>
+  <div class="dlg-body" id="detailBody"></div>
+</dialog>
+
+<dialog id="keyDlg" aria-label="API 키 설정">
+  <form class="dlg-body key-form" id="keyForm" method="dialog">
+    <label for="keyInput">TMDB API 키</label>
+    <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="v3 API 키를 붙여넣으세요">
+    <p>키는 이 브라우저(localStorage)에만 저장되고, TMDB 요청 외에는 어디로도 전송되지 않아요.</p>
+    <div class="row">
+      <button class="primary" type="submit" id="keySave">저장</button>
+      <button class="secondary" type="button" id="keyCancel">닫기</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const API = "https://api.themoviedb.org/3";
+  const IMG = "https://image.tmdb.org/t/p/";
+  const KEY_STORE = "tmdb_api_key";
+  const WISH_STORE = "movie_wishlist_v1";
+
+  const $ = (s) => document.querySelector(s);
+  const main = $("#main");
+
+  // ---------- storage ----------
+  const read = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+  let apiKey = read(KEY_STORE, "");
+  let wishlist = read(WISH_STORE, []);   // [{id,title,poster_path,release_date,vote_average}]
+
+  const isWished = (id) => wishlist.some((m) => m.id === id);
+
+  function toggleWish(movie) {
+    if (isWished(movie.id)) {
+      wishlist = wishlist.filter((m) => m.id !== movie.id);
+      toast("찜 목록에서 뺐어요");
+    } else {
+      wishlist.unshift({
+        id: movie.id,
+        title: movie.title,
+        poster_path: movie.poster_path || null,
+        release_date: movie.release_date || "",
+        vote_average: movie.vote_average || 0,
+      });
+      toast("찜 목록에 담았어요");
+    }
+    write(WISH_STORE, wishlist);
+    syncHearts(movie.id);
+    updateCount();
+    if (state.view === "wish") renderWish();
+  }
+
+  function syncHearts(id) {
+    document.querySelectorAll(`[data-heart="${id}"]`).forEach((el) => {
+      el.setAttribute("aria-pressed", isWished(id));
+      if (el.classList.contains("heart")) el.setAttribute("aria-label", isWished(id) ? "찜 취소" : "찜하기");
+      const label = el.querySelector(".wish-label");
+      if (label) label.textContent = isWished(id) ? "찜한 영화" : "찜하기";
+    });
+  }
+
+  function updateCount() {
+    $("#wishCount").textContent = wishlist.length ? wishlist.length : "";
+  }
+
+  // ---------- api ----------
+  async function tmdb(path, params = {}) {
+    const url = new URL(API + path);
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("language", "ko-KR");
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    let res;
+    try { res = await fetch(url); }
+    catch { throw new Error("네트워크에 연결할 수 없어요. 인터넷 연결을 확인해 주세요."); }
+    if (res.status === 401) throw new Error("API 키가 올바르지 않아요. 오른쪽 위 'API 키 설정'에서 다시 입력해 주세요.");
+    if (!res.ok) throw new Error(`TMDB 요청에 실패했어요 (오류 ${res.status}).`);
+    return res.json();
+  }
+
+  // ---------- state ----------
+  const state = { view: "search", query: "", page: 1, totalPages: 1, total: 0, items: [], loading: false, error: "" };
+  let requestId = 0;
+
+  async function load(reset) {
+    if (!apiKey) { renderNoKey(); return; }
+    const myId = ++requestId;
+    if (reset) { state.page = 1; state.items = []; }
+    else state.page += 1;
+    state.loading = true; state.error = "";
+    renderSearch();
+    try {
+      const data = state.query
+        ? await tmdb("/search/movie", { query: state.query, page: state.page, include_adult: "false" })
+        : await tmdb("/movie/popular", { page: state.page, region: "KR" });
+      if (myId !== requestId) return;   // a newer request replaced this one
+      state.items = state.items.concat(data.results);
+      state.totalPages = data.total_pages;
+      state.total = data.total_results;
+    } catch (e) {
+      if (myId !== requestId) return;
+      state.error = e.message;
+      if (!reset) state.page -= 1;
+    }
+    state.loading = false;
+    renderSearch();
+  }
+
+  // ---------- rendering ----------
+  const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C1 8.6 2.8 5 6.3 5c2 0 3.4 1.1 4.2 2.4h.9C12.3 6.1 13.7 5 15.7 5c3.5 0 5.3 3.6 3.9 6.8C19.5 16.4 12 21 12 21z"/></svg>';
+
+  function card(m) {
+    const li = document.createElement("li");
+    const wrap = document.createElement("div");
+    wrap.className = "poster-wrap";
+
+    const poster = document.createElement("button");
+    poster.type = "button";
+    poster.className = "poster";
+    poster.setAttribute("aria-label", `${m.title} 상세 보기`);
+    if (m.poster_path) {
+      const img = document.createElement("img");
+      img.src = IMG + "w342" + m.poster_path;
+      img.alt = "";
+      img.loading = "lazy";
+      poster.append(img);
+    } else {
+      const d = document.createElement("div");
+      d.className = "no-poster";
+      d.textContent = m.title;
+      poster.append(d);
+    }
+    poster.addEventListener("click", () => openDetail(m.id));
+
+    const heart = document.createElement("button");
+    heart.type = "button";
+    heart.className = "heart";
+    heart.dataset.heart = m.id;
+    heart.setAttribute("aria-pressed", isWished(m.id));
+    heart.setAttribute("aria-label", isWished(m.id) ? "찜 취소" : "찜하기");
+    heart.innerHTML = HEART;
+    heart.addEventListener("click", () => toggleWish(m));
+
+    wrap.append(poster, heart);
+
+    const title = document.createElement("h3");
+    title.className = "card-title";
+    title.textContent = m.title;
+
+    const meta = document.createElement("div");
+    meta.className = "card-meta";
+    const year = (m.release_date || "").slice(0, 4);
+    if (year) { const s = document.createElement("span"); s.textContent = year; meta.append(s); }
+    if (m.vote_average) { const s = document.createElement("span"); s.textContent = "★ " + m.vote_average.toFixed(1); meta.append(s); }
+
+    li.append(wrap, title, meta);
+    return li;
+  }
+
+  function stateBlock(title, text, btn) {
+    const d = document.createElement("div");
+    d.className = "state";
+    const s = document.createElement("strong");
+    s.textContent = title;
+    d.append(s, text);
+    if (btn) d.append(document.createElement("br"), btn);
+    return d;
+  }
+
+  function renderNoKey() {
+    main.replaceChildren();
+    const b = document.createElement("button");
+    b.className = "primary"; b.type = "button"; b.textContent = "API 키 입력하기";
+    b.addEventListener("click", openKeyDialog);
+    main.append(stateBlock("먼저 TMDB API 키가 필요해요", "키를 한 번만 입력하면 검색을 시작할 수 있어요.", b));
+  }
+
+  function renderSearch() {
+    if (state.view !== "search") return;
+    if (!apiKey) return renderNoKey();
+    main.replaceChildren();
+
+    const h = document.createElement("h2");
+    h.className = "section-title";
+    h.textContent = state.query
+      ? (state.loading && !state.items.length ? `“${state.query}” 검색 중…` : `“${state.query}” 검색 결과 ${state.total}편`)
+      : "지금 인기 있는 영화";
+    main.append(h);
+
+    if (state.error) {
+      const b = document.createElement("button");
+      b.className = "primary"; b.type = "button"; b.textContent = "다시 시도";
+      b.addEventListener("click", () => load(state.items.length === 0));
+      main.append(stateBlock("불러오지 못했어요", state.error, b));
+      if (!state.items.length) return;
+    }
+
+    if (!state.loading && !state.error && !state.items.length) {
+      main.append(stateBlock("검색 결과가 없어요", "제목의 철자를 확인하거나 더 짧은 검색어로 다시 찾아보세요."));
+      return;
+    }
+
+    if (state.items.length) {
+      const ul = document.createElement("ul");
+      ul.className = "grid";
+      state.items.forEach((m) => ul.append(card(m)));
+      main.append(ul);
+    }
+
+    if (state.loading && state.items.length) {
+      const p = document.createElement("p"); p.className = "state"; p.textContent = "불러오는 중…"; main.append(p);
+    } else if (!state.loading && state.page < state.totalPages) {
+      const b = document.createElement("button");
+      b.className = "more"; b.type = "button"; b.textContent = "더 보기";
+      b.addEventListener("click", () => load(false));
+      main.append(b);
+    }
+  }
+
+  function renderWish() {
+    main.replaceChildren();
+    const h = document.createElement("h2");
+    h.className = "section-title";
+    h.textContent = wishlist.length ? `찜한 영화 ${wishlist.length}편` : "찜 목록";
+    main.append(h);
+
+    if (!wishlist.length) {
+      const b = document.createElement("button");
+      b.className = "primary"; b.type = "button"; b.textContent = "영화 찾아보기";
+      b.addEventListener("click", () => { setView("search"); $("#q").focus(); });
+      main.append(stateBlock("아직 찜한 영화가 없어요", "영화 포스터의 하트를 누르면 이곳에 모여요.", b));
+      return;
+    }
+    const ul = document.createElement("ul");
+    ul.className = "grid";
+    wishlist.forEach((m) => ul.append(card(m)));
+    main.append(ul);
+  }
+
+  function setView(v) {
+    state.view = v;
+    document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.view === v));
+    if (v === "wish") renderWish(); else renderSearch();
+  }
+
+  // ---------- detail dialog ----------
+  const detailDlg = $("#detailDlg");
+  const detailBody = $("#detailBody");
+
+  async function openDetail(id) {
+    if (!apiKey) return;
+    detailBody.replaceChildren(Object.assign(document.createElement("p"), { textContent: "불러오는 중…", className: "state" }));
+    if (!detailDlg.open) detailDlg.showModal();
+    try {
+      const m = await tmdb(`/movie/${id}`, { append_to_response: "credits" });
+      renderDetail(m);
+    } catch (e) {
+      detailBody.replaceChildren(stateBlock("상세 정보를 불러오지 못했어요", e.message));
+    }
+  }
+
+  function renderDetail(m) {
+    const box = document.createElement("div");
+    box.className = "detail";
+
+    const left = document.createElement("div");
+    left.className = "poster-col";
+    if (m.poster_path) {
+      const img = document.createElement("img");
+      img.src = IMG + "w500" + m.poster_path; img.alt = `${m.title} 포스터`;
+      left.append(img);
+    } else {
+      const d = document.createElement("div"); d.className = "no-poster"; d.textContent = m.title; left.append(d);
+    }
+
+    const right = document.createElement("div");
+    const h = document.createElement("h2"); h.textContent = m.title;
+    right.append(h);
+    if (m.tagline) { const t = document.createElement("p"); t.className = "tagline"; t.textContent = m.tagline; right.append(t); }
+
+    const facts = document.createElement("dl");
+    facts.className = "facts";
+    const add = (k, v) => {
+      if (!v) return;
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = v;
+      facts.append(dt, dd);
+    };
+    add("개봉", m.release_date);
+    if (m.runtime) add("상영 시간", `${Math.floor(m.runtime / 60)}시간 ${m.runtime % 60}분`);
+    add("장르", (m.genres || []).map((g) => g.name).join(", "));
+    if (m.vote_average) add("평점", `★ ${m.vote_average.toFixed(1)} (${m.vote_count.toLocaleString()}명)`);
+    const director = (m.credits?.crew || []).find((c) => c.job === "Director");
+    add("감독", director?.name);
+    add("출연", (m.credits?.cast || []).slice(0, 5).map((c) => c.name).join(", "));
+    right.append(facts);
+
+    const ov = document.createElement("p");
+    ov.className = "overview";
+    ov.textContent = m.overview || "한국어 줄거리 정보가 아직 없어요.";
+    right.append(ov);
+
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "wish-btn"; btn.dataset.heart = m.id;
+    btn.setAttribute("aria-pressed", isWished(m.id));
+    btn.innerHTML = HEART + `<span class="wish-label">${isWished(m.id) ? "찜한 영화" : "찜하기"}</span>`;
+    btn.addEventListener("click", () => toggleWish(m));
+    right.append(btn);
+
+    box.append(left, right);
+    detailBody.replaceChildren(box);
+  }
+
+  $("#detailClose").addEventListener("click", () => detailDlg.close());
+  detailDlg.addEventListener("click", (e) => { if (e.target === detailDlg) detailDlg.close(); });
+
+  // ---------- api key dialog ----------
+  const keyDlg = $("#keyDlg");
+  function openKeyDialog() { $("#keyInput").value = apiKey; keyDlg.showModal(); $("#keyInput").focus(); }
+  $("#keyBtn").addEventListener("click", openKeyDialog);
+  $("#keyCancel").addEventListener("click", () => keyDlg.close());
+  $("#keyForm").addEventListener("submit", () => {
+    const v = $("#keyInput").value.trim();
+    if (!v) return;
+    apiKey = v;
+    write(KEY_STORE, apiKey);
+    toast("API 키를 저장했어요");
+    if (state.view === "search") load(true);
+  });
+
+  // ---------- search input (debounced) ----------
+  let timer;
+  $("#q").addEventListener("input", (e) => {
+    clearTimeout(timer);
+    const v = e.target.value.trim();
+    timer = setTimeout(() => {
+      state.query = v;
+      if (state.view !== "search") setView("search");
+      load(true);
+    }, 400);
+  });
+
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => setView(t.dataset.view)));
+
+  // ---------- toast ----------
+  let toastTimer;
+  function toast(msg) {
+    const el = $("#toast");
+    el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 1600);
+  }
+
+  // ---------- start ----------
+  updateCount();
+  if (apiKey) load(true); else { renderNoKey(); openKeyDialog(); }
+})();
+</script>
+</body>
+</html>
